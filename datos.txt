@@ -1,4 +1,1 @@
-const MONGO_URI = "mongodb+srv://alvaropavonmartinez7_db_user:NOFEdAWWSHQ9E1o1@dj.hzu5pyb.mongodb.net/?retryWrites=true&w=majority&appName=DJ";
-const JWT_SECRET = "UNA_FRASE_SECRETA_SUPER_LARGA_Y_DIFICIL_DE_ADIVINAR";
-const SPOTIFY_CLIENT_ID = '278a81b38a3641d2bd83320988bb8e65';
-const SPOTIFY_CLIENT_SECRET = '3a2f51a106504b9697afd9d11cf3dce1';
+
