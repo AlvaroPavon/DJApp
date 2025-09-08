@@ -1,6 +1,7 @@
 require('dotenv').config();
 // --- 1. IMPORTACIONES ---
 const express = require('express');
+const cors = require('cors');
 const http = require('http');
 const mongoose = require('mongoose');
 const { Server } = require('socket.io');
@@ -15,20 +16,33 @@ const DJ = require('./djModel.js');
 const Party = require('./partyModel.js');
 
 // --- 2. CONFIGURACIÓN INICIAL ---
+const express = require('express');
+const cors = require('cors'); // <-- Importante: añadir esta línea
+const http = require('http');
+const { Server } = require('socket.io');
+
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:3000",
+
+// Opciones de CORS para permitir la web y la app móvil
+const corsOptions = {
+    origin: ["http://localhost:3000", "https://localhost"],
     methods: ["GET", "POST"]
-  }
+};
+
+// Usamos el middleware de CORS para Express
+app.use(cors(corsOptions));
+
+// Configuramos CORS también para Socket.IO
+const io = new Server(server, {
+  cors: corsOptions
 });
 
 app.use(express.static('public'));
 app.use(express.json());
 
-// --- ¡NUEVO! Redirige la ruta raíz a la página de registro ---
-app.get('/', (req, res) => {
+// Redirige la ruta raíz a la página de registro
+app.get('/', (_, res) => {
     res.redirect('/register.html');
 });
 
