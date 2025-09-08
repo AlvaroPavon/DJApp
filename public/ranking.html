@@ -19,6 +19,20 @@
         </thead>
         <tbody id="ranking-body"></tbody>
     </table>
+    <script type="module">
+        import { App } from 'https://unpkg.com/@capacitor/app@latest/dist/esm/index.js';
+
+        App.addListener('backButton', ({ canGoBack }) => {
+            if (window.location.pathname === "/ranking.html") {
+                // Si estamos en la página de ranking, usamos el historial del navegador
+                window.history.back();
+            } else if (!canGoBack) {
+                // Si no hay más historial, cerramos la app
+                App.exitApp();
+            }
+        });
+    </script>
+</body>
     <script>
         const token = localStorage.getItem('dj-token');
         if (!token) window.location.href = '/login.html';
