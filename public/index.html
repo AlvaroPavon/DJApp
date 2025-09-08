@@ -37,6 +37,13 @@
     const salaId = urlParams.get('dj');
     const starsContainer = document.querySelector('.stars');
     const stars = document.querySelectorAll('.stars span');
+    const params = new URLSearchParams(window.location.search);
+        // Si NO hay un parámetro 'dj' en la URL (alguien que abre la app)...
+        if (!params.has('dj')) {
+            // ...lo redirigimos inmediatamente al registro.
+            // Usamos .replace() para que no pueda volver atrás en el historial.
+            window.location.replace('/register.html');
+        }
 
     if (!salaId) {
         document.body.innerHTML = "<h1>Error: Este QR no es válido.</h1>";
