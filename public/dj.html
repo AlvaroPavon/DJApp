@@ -84,8 +84,9 @@
             const btnNuevaFiesta = document.getElementById('btn-nueva-fiesta');
             const qrcodeContainer = document.getElementById('qrcode-container');
             const downloadLink = document.getElementById('download-link');
+            const serverUrl = "https://djapp.duckdns.org";
             
-            const socket = io({ auth: { token }, transports: ["websocket"] });
+            const socket = io(serverUrl, { auth: { token },transports: ["websocket"] });
 
             socket.on('connect_error', (err) => {
                 if (err.message.includes('Authentication error')) {

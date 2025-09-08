@@ -27,6 +27,12 @@ const io = new Server(server, {
 app.use(express.static('public'));
 app.use(express.json());
 
+// --- ¡NUEVO! Redirige la ruta raíz a la página de registro ---
+app.get('/', (req, res) => {
+    res.redirect('/register.html');
+});
+
+
 // --- 3. CONFIGURACIÓN DE CLAVES Y CONSTANTES (LEÍDAS DESDE .env) ---
 const MONGO_URI = process.env.MONGO_URI;
 const JWT_SECRET = process.env.JWT_SECRET;

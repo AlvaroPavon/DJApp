@@ -28,7 +28,8 @@
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <script>
     // --- CONFIGURACIÓN INICIAL ---
-    const socket = io({ transports: ["websocket"] });
+    const serverUrl = "https://djapp.duckdns.org";
+    const socket = io(serverUrl, { transports: ["websocket"] });
     const searchInput = document.getElementById('search-input');
     const suggestionsList = document.getElementById('suggestions');
     const ratingModal = document.getElementById('rating-modal');
@@ -51,7 +52,7 @@
             suggestionsList.innerHTML = ''; return;
         }
         searchTimeout = setTimeout(async () => {
-            const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
+            const response = await fetch(`${serverUrl}/search?q=${encodeURIComponent(query)}`);
             const songs = await response.json();
             suggestionsList.innerHTML = '';
             songs.forEach(song => {
