@@ -82,11 +82,9 @@
             document.getElementById('dj-name').textContent = `ID del Evento: ${currentPartyId}`;
             const listaCanciones = document.getElementById('lista-canciones');
             const btnNuevaFiesta = document.getElementById('btn-nueva-fiesta');
-            const qrcodeContainer = document.getElementById('qrcode-container');
-            const downloadLink = document.getElementById('download-link');
             const serverUrl = "https://djapp.duckdns.org";
             
-            const socket = io(serverUrl, { auth: { token },transports: ["websocket"] });
+            const socket = io(serverUrl, { auth: { token }, transports: ["websocket"] });
 
             socket.on('connect_error', (err) => {
                 if (err.message.includes('Authentication error')) {
@@ -131,23 +129,10 @@
                     button.disabled = true;
                 }
             });
-            const { App } = capacitor.plugins;
-
-    // Añadimos un "escuchador" para cuando la app vuelve a primer plano
-    App.addListener('appStateChange', ({ isActive }) => {
-        if (isActive) {
-            console.log('La app ha vuelto a primer plano.');
-            // Si el socket no está conectado, intentamos reconectar.
-            if (!socket.connected) {
-                console.log('Socket desconectado, intentando reconectar...');
-                socket.connect();
-            }
-        }
-    });
 
             listaCanciones.addEventListener('click', (event) => {
                 const button = event.target.closest('.btn-played');
-                if (button) {
+                if (button && !button.disabled) {
                     const songId = button.getAttribute('data-songid');
                     socket.emit('mark-song-as-played', { partyId: currentPartyId, songId: songId });
                 }
@@ -166,7 +151,9 @@
                 }
             });
             
-            const guestUrl = `${window.location.origin}/index.html?dj=${currentPartyId}`;
+            const guestUrl = `${window.location.origin}/index.html?dj=${currentPartyId}`; // Usamos index.html si no se renombraron los archivos
+            const qrcodeContainer = document.getElementById('qrcode-container');
+            const downloadLink = document.getElementById('download-link');
             qrcodeContainer.innerHTML = '';
             QRCode.toCanvas(guestUrl, { width: 256 }, (error, canvas) => {
                 if (error) return console.error(error);
@@ -175,6 +162,17 @@
                 downloadLink.download = `qr-fiesta-${currentPartyId}.png`;
                 downloadLink.style.display = 'inline-block';
             });
+
+            // LÓGICA DE CAPACITOR (CORREGIDA Y SOLO SI ESTÁ EN MÓVIL)
+            if (window.Capacitor && Capacitor.isNativePlatform()) {
+                const { App } = Capacitor.Plugins;
+                App.addListener('appStateChange', ({ isActive }) => {
+                    if (isActive && !socket.connected) {
+                        console.log('App activa, reconectando socket...');
+                        socket.connect();
+                    }
+                });
+            }
         }
     </script>
 </body>
