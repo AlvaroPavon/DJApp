@@ -131,6 +131,19 @@
                     button.disabled = true;
                 }
             });
+            const { App } = capacitor.plugins;
+
+    // Añadimos un "escuchador" para cuando la app vuelve a primer plano
+    App.addListener('appStateChange', ({ isActive }) => {
+        if (isActive) {
+            console.log('La app ha vuelto a primer plano.');
+            // Si el socket no está conectado, intentamos reconectar.
+            if (!socket.connected) {
+                console.log('Socket desconectado, intentando reconectar...');
+                socket.connect();
+            }
+        }
+    });
 
             listaCanciones.addEventListener('click', (event) => {
                 const button = event.target.closest('.btn-played');
