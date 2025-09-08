@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Ranking de DJs</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <h1>🏆 Ranking de DJs</h1>
+    <p><a href="/dj.html">Volver a mi panel</a></p>
+    <table>
+        <thead>
+            <tr>
+                <th>Posición</th>
+                <th>DJ</th>
+                <th>Puntuación Media</th>
+                <th>Fiestas Realizadas</th>
+            </tr>
+        </thead>
+        <tbody id="ranking-body"></tbody>
+    </table>
+    <script>
+        const token = localStorage.getItem('dj-token');
+        if (!token) window.location.href = '/login.html';
+
+        async function loadRanking() {
+            const response = await fetch('/ranking', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const rankingData = await response.json();
+                const tbody = document.getElementById('ranking-body');
+                tbody.innerHTML = '';
+                rankingData.forEach((dj, index) => {
+                    tbody.innerHTML += `<tr><td>${index + 1}</td><td>${dj.username}</td><td>${dj.averageRating} ★</td><td>${dj.partyCount}</td></tr>`;
+                });
+            } else {
+                alert('No se pudo cargar el ranking.');
+            }
+        }
+        loadRanking();
+    </script>
+</body>
+</html>
