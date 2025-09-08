@@ -40,8 +40,14 @@
     </div>
     
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <script>
-        // --- 1. VERIFICACIÓN Y CONFIGURACIÓN INICIAL ---
+    <script type="module">
+        // Importamos los plugins de Capacitor que usaremos de forma segura
+        import { App } from 'https://unpkg.com/@capacitor/app@latest/dist/esm/index.js';
+        import { Share } from 'https://unpkg.com/@capacitor/share@latest/dist/esm/index.js';
+        import { Capacitor } from 'https://unpkg.com/@capacitor/core@latest/dist/esm/index.js';
+
+
+        // --- 1. LÓGICA PRINCIPAL ---
         const token = localStorage.getItem('dj-token');
         if (!token) {
             window.location.href = '/login.html';
@@ -54,7 +60,6 @@
         const urlParams = new URLSearchParams(window.location.search);
         const partyId = urlParams.get('dj');
 
-        // --- 2. LÓGICA PRINCIPAL: ¿EXISTE FIESTA O SE CREA? ---
         if (partyId) {
             partySetupSection.style.display = 'none';
             dashboardContentSection.style.display = 'block';
@@ -64,7 +69,6 @@
             dashboardContentSection.style.display = 'none';
         }
 
-        // --- 3. EVENTO PARA CREAR LA FIESTA ---
         createPartyBtn.addEventListener('click', () => {
             const customName = partyNameInput.value.trim();
             if (!customName) {
@@ -77,14 +81,19 @@
             window.location.href = `dj.html?dj=${uniquePartyId}`;
         });
 
-        // --- 4. FUNCIÓN PRINCIPAL DEL PANEL ---
         function runDashboard(currentPartyId) {
             document.getElementById('dj-name').textContent = `ID del Evento: ${currentPartyId}`;
             const listaCanciones = document.getElementById('lista-canciones');
             const btnNuevaFiesta = document.getElementById('btn-nueva-fiesta');
-            const serverUrl = "https://djapp.duckdns.org";
+            const shareQrBtn = document.getElementById('share-qr-btn');
             
-            const socket = io(serverUrl, { auth: { token }, transports: ["websocket"] });
+            const serverUrl = "https://djapp.duckdns.org"; // Asegúrate de que este es tu dominio
+            
+            // CONEXIÓN AL SERVIDOR (SINTAXIS CORREGIDA)
+            const socket = io(serverUrl, { 
+                auth: { token }, 
+                transports: ["websocket"] 
+            });
 
             socket.on('connect_error', (err) => {
                 if (err.message.includes('Authentication error')) {
@@ -151,21 +160,37 @@
                 }
             });
             
-           const guestUrl = `${serverUrl}/index.html?dj=${currentPartyId}`; // Usamos index.html si no se renombraron los archivos
+            // LÓGICA DE GENERACIÓN Y COMPARTIR QR (REPARADA)
+            const guestUrl = `${serverUrl}/index.html?dj=${currentPartyId}`;
             const qrcodeContainer = document.getElementById('qrcode-container');
-            const downloadLink = document.getElementById('download-link');
             qrcodeContainer.innerHTML = '';
-            QRCode.toCanvas(guestUrl, { width: 256 }, (error, canvas) => {
+            QRCode.toCanvas(guestUrl, { width: 300, margin: 1 }, (error, canvas) => {
                 if (error) return console.error(error);
                 qrcodeContainer.appendChild(canvas);
-                downloadLink.href = canvas.toDataURL('image/png');
-                downloadLink.download = `qr-fiesta-${currentPartyId}.png`;
-                downloadLink.style.display = 'inline-block';
-            });
+                shareQrBtn.style.display = 'block';
 
-            // LÓGICA DE CAPACITOR (CORREGIDA Y SOLO SI ESTÁ EN MÓVIL)
-            if (window.Capacitor && Capacitor.isNativePlatform()) {
-                const { App } = Capacitor.Plugins;
+                shareQrBtn.onclick = async () => {
+                    const dataUrl = canvas.toDataURL('image/png');
+                    try {
+                        // Intenta usar el plugin nativo de Capacitor para compartir
+                        await Share.share({
+                            title: `Código QR para la fiesta ${currentPartyId}`,
+                            text: 'Escanea este código para pedir canciones.',
+                            url: dataUrl,
+                        });
+                    } catch(err) {
+                        // Si falla (porque no es una app nativa), usa el método de descarga estándar
+                        console.log("El plugin Share no está disponible, usando descarga normal.");
+                        const link = document.createElement('a');
+                        link.href = dataUrl;
+                        link.download = `qr-fiesta-${currentPartyId}.png`;
+                        link.click();
+                    }
+                };
+            });
+            
+            // LÓGICA NATIVA DE CAPACITOR (CORREGIDA)
+            if (Capacitor.isNativePlatform()) {
                 App.addListener('appStateChange', ({ isActive }) => {
                     if (isActive && !socket.connected) {
                         console.log('App activa, reconectando socket...');
