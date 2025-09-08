@@ -16,7 +16,6 @@ const DJ = require('./djModel.js');
 const Party = require('./partyModel.js');
 
 // --- 2. CONFIGURACIÓN INICIAL ---
-const express = require('express');
 const cors = require('cors'); // <-- Importante: añadir esta línea
 const http = require('http');
 const { Server } = require('socket.io');
