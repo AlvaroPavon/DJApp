@@ -151,7 +151,7 @@
                 }
             });
             
-            const guestUrl = `${window.location.origin}/index.html?dj=${currentPartyId}`; // Usamos index.html si no se renombraron los archivos
+           const guestUrl = `${serverUrl}/index.html?dj=${currentPartyId}`; // Usamos index.html si no se renombraron los archivos
             const qrcodeContainer = document.getElementById('qrcode-container');
             const downloadLink = document.getElementById('download-link');
             qrcodeContainer.innerHTML = '';
