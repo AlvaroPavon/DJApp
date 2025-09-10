@@ -13,6 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@capacitor/core@latest/dist/capacitor.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@capacitor/app@latest/dist/plugin.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@capacitor/share@latest/dist/plugin.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@capacitor/filesystem@latest/dist/plugin.js"></script>
 </head>
 <body>
     <div class="container">
@@ -48,11 +49,9 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- LÍNEAS CORREGIDAS ---
-            // Primero obtenemos el objeto Capacitor principal de la ventana global
             const Capacitor = window.Capacitor;
-            // Luego, obtenemos los plugins de la propiedad .Plugins
-            const { App, Share } = Capacitor.Plugins;
+            // Obtenemos el nuevo plugin Filesystem
+            const { App, Share, Filesystem } = Capacitor.Plugins;
 
             const token = localStorage.getItem('dj-token');
             if (!token) {
@@ -195,16 +194,31 @@
                     shareQrBtn.style.display = 'block';
                 });
 
+                // --- LÓGICA DE COMPARTIR/GUARDAR COMPLETAMENTE MODIFICADA ---
                 shareQrBtn.onclick = async () => {
                     const dataUrl = canvas.toDataURL('image/png');
                     
                     if (Capacitor.isNativePlatform()) {
-                        await Share.share({
-                            title: `Código QR para la fiesta ${currentPartyId}`,
-                            text: 'Escanea este código para pedir canciones.',
-                            url: dataUrl,
-                        });
+                        try {
+                            // 1. Guardar la imagen como archivo temporal
+                            const result = await Filesystem.writeFile({
+                                path: `qr-${currentPartyId}.png`,
+                                data: dataUrl,
+                                directory: 'CACHE' // Directorio de caché de la app
+                            });
+
+                            // 2. Compartir el archivo guardado
+                            await Share.share({
+                                title: `Código QR para la fiesta ${currentPartyId}`,
+                                text: 'Escanea este código para pedir canciones.',
+                                url: result.uri, // Usamos la URI del archivo guardado
+                            });
+                        } catch (error) {
+                            console.error("Error al compartir el archivo", error);
+                            alert("No se pudo compartir el QR.");
+                        }
                     } else {
+                        // Lógica para web no cambia
                         const link = document.createElement('a');
                         link.href = dataUrl;
                         link.download = `qr-fiesta-${currentPartyId}.png`;
