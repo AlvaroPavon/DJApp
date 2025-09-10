@@ -57,6 +57,9 @@
                 window.location.href = '/login.html';
             }
 
+            // --- URL DEL SERVIDOR DEFINIDA ---
+            const serverUrl = "https://djapp.duckdns.org";
+
             const partySetupSection = document.getElementById('party-setup');
             const dashboardContentSection = document.getElementById('dashboard-content');
             const createPartyBtn = document.getElementById('create-party-btn');
@@ -68,7 +71,8 @@
 
                 if (!partyId) {
                     try {
-                        const response = await fetch('/api/active-party', {
+                        // --- LLAMADA A LA API CORREGIDA ---
+                        const response = await fetch(`${serverUrl}/api/active-party`, {
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
                         if (response.ok) {
@@ -90,14 +94,11 @@
                 }
             }
 
-            initialize(); // Se ejecuta la primera vez que carga la página
+            initialize();
 
-            // --- CÓDIGO AÑADIDO PARA GESTIONAR EL ESTADO DE LA APP ---
             if (Capacitor.isNativePlatform()) {
-                // Se ejecuta CADA VEZ que la app vuelve a primer plano
                 App.addListener('resume', () => {
-                    console.log('App resumida, comprobando estado de la fiesta...');
-                    initialize(); // Volvemos a comprobar si hay una fiesta activa
+                    initialize();
                 });
             }
 
@@ -120,8 +121,6 @@
                 const shareQrBtn = document.getElementById('share-qr-btn');
                 const qrcodeContainer = document.getElementById('qrcode-container');
                 
-                const serverUrl = "https://djapp.duckdns.org";
-                
                 const socket = io(serverUrl, { 
                     auth: { token }, 
                     transports: ["websocket"] 
@@ -136,8 +135,6 @@
                 
                 socket.emit('join-dj-room', currentPartyId);
                 
-                // ... (El resto del código de runDashboard no necesita cambios)
-
                 const createSongItem = (cancion) => {
                     const item = document.createElement('li');
                     item.className = 'cancion-item';
@@ -203,7 +200,7 @@
                     if (error) return console.error(error);
                     shareQrBtn.style.display = 'block';
                 });
-                
+
                 shareQrBtn.onclick = async () => {
                     const dataUrl = canvas.toDataURL('image/png');
                     
@@ -238,7 +235,8 @@
                 endPartyBtn.addEventListener('click', async () => {
                     if (confirm('¿Estás seguro de que quieres finalizar esta fiesta?')) {
                         try {
-                            await fetch('/api/end-party', {
+                            // --- LLAMADA A LA API CORREGIDA ---
+                            await fetch(`${serverUrl}/api/end-party`, {
                                 method: 'POST',
                                 headers: { 'Authorization': `Bearer ${token}` }
                             });
