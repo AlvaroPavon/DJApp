@@ -232,6 +232,10 @@ io.on('connection', (socket) => {
             socket.join(partyId);
             console.log(`🎧 DJ ${djUsername} se ha unido a su sala: ${partyId}`);
             
+            // --- LÍNEA MODIFICADA ---
+            // Actualizamos el perfil del DJ para guardar su fiesta activa.
+            await DJ.updateOne({ username: djUsername }, { activePartyId: partyId });
+    
             const party = await Party.findOneAndUpdate(
                 { partyId: partyId },
                 { $setOnInsert: { partyId: partyId, djUsername: djUsername } },
