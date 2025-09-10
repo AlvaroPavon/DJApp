@@ -10,6 +10,7 @@ const jwt = require('jsonwebtoken');
 const axios = require('axios');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const path = require('path');
 
 // Modelos de la base de datos
 const DJ = require('./djModel.js');
@@ -32,9 +33,10 @@ const io = new Server(server, {
 app.use(express.static('public'));
 app.use(express.json());
 
-// Redirige la ruta raíz a la página de registro
-app.get('/', (_, res) => {
-    res.redirect('/register.html');
+// --- LÍNEA MODIFICADA ---
+// La ruta raíz ahora siempre redirige a la página de login.
+app.get('/', (req, res) => {
+    res.redirect('/login.html');
 });
 
 
@@ -62,7 +64,6 @@ mongoose.connect(MONGO_URI)
     .catch(err => console.error('❌ Error al conectar a la base de datos:', err));
 
 // --- 5. RUTAS Y LÓGICA DE LA API ---
-
 app.post('/register', async (req, res) => {
     try {
         const { username, email, password } = req.body;
@@ -187,7 +188,6 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
-// --- RUTA DE RANKING MODIFICADA ---
 app.get('/ranking', authenticateToken, async (req, res) => {
     try {
         const djs = await DJ.find({}, 'username partyCount ratings');
@@ -200,7 +200,7 @@ app.get('/ranking', authenticateToken, async (req, res) => {
                 username: dj.username,
                 partyCount: dj.partyCount,
                 averageRating: averageRating,
-                totalRatings: totalRatings // Dato añadido
+                totalRatings: totalRatings
             };
         }).sort((a, b) => {
             if (a.averageRating === 'Sin valoraciones') return 1;
