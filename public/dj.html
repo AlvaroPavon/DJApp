@@ -42,11 +42,13 @@
     
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script type="module">
+    // --- ENVOLTORIO AÑADIDO PARA ESPERAR LA CARGA DEL DOM ---
+    document.addEventListener('DOMContentLoaded', () => {
+
         // Importamos los plugins de Capacitor que usaremos de forma segura
         import { App } from 'https://unpkg.com/@capacitor/app@latest/dist/esm/index.js';
         import { Share } from 'https://unpkg.com/@capacitor/share@latest/dist/esm/index.js';
         import { Capacitor } from 'https://unpkg.com/@capacitor/core@latest/dist/esm/index.js';
-
 
         // --- 1. LÓGICA PRINCIPAL ---
         const token = localStorage.getItem('dj-token');
@@ -175,27 +177,19 @@
                 qrcodeContainer.appendChild(canvas);
                 shareQrBtn.style.display = 'block';
 
-                // --- LÓGICA DE COMPARTIR/GUARDAR MEJORADA ---
                 shareQrBtn.onclick = async () => {
                     const dataUrl = canvas.toDataURL('image/png');
 
-                    // Detectamos si estamos en la app nativa o en la web
                     if (Capacitor.isNativePlatform()) {
-                        // --- LÓGICA PARA MÓVIL (APP CAPACITOR) ---
-                        // Abre el menú de compartir nativo del teléfono
                         await Share.share({
                             title: `Código QR para la fiesta ${currentPartyId}`,
                             text: 'Escanea este código para pedir canciones.',
-                            url: dataUrl, // Pasamos la imagen como una URL de datos
+                            url: dataUrl,
                         });
                     } else {
-                        // --- LÓGICA PARA NAVEGADOR WEB (PC) ---
-                        // Crea un enlace temporal para forzar la descarga
                         const link = document.createElement('a');
                         link.href = dataUrl;
                         link.download = `qr-fiesta-${currentPartyId}.png`;
-                        
-                        // Simula un clic en el enlace para iniciar la descarga
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
@@ -220,6 +214,7 @@
                 });
             }
         }
+    }); // --- CIERRE DEL ENVOLTORIO DOMCONTENTLOADED ---
     </script>
 </body>
 </html>
