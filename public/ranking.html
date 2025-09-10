@@ -46,7 +46,14 @@
                 const tbody = document.getElementById('ranking-body');
                 tbody.innerHTML = '';
                 rankingData.forEach((dj, index) => {
-                    tbody.innerHTML += `<tr><td>${index + 1}</td><td>${dj.username}</td><td>${dj.averageRating} ★</td><td>${dj.partyCount}</td></tr>`;
+                    // --- LÍNEAS MODIFICADAS CON data-label ---
+                    tbody.innerHTML += `
+                        <tr>
+                            <td data-label="Posición">${index + 1}</td>
+                            <td data-label="DJ">${dj.username}</td>
+                            <td data-label="Puntuación Media">${dj.averageRating} ★</td>
+                            <td data-label="Fiestas Realizadas">${dj.partyCount}</td>
+                        </tr>`;
                 });
             } else {
                 alert('No se pudo cargar el ranking.');
@@ -54,5 +61,6 @@
         }
         loadRanking();
     </script>
+
 </body>
 </html>
