@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pide tu Canción</title>
     <link rel="stylesheet" href="/css/style.css">
+    
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -23,105 +25,80 @@
             <button id="close-modal">Cerrar</button>
         </div>
     </div>
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-<script>
-    // --- CONFIGURACIÓN INICIAL ---
-    const serverUrl = "https://djapp.duckdns.org";
-    const socket = io(serverUrl, { transports: ["websocket"] });
-    const searchInput = document.getElementById('search-input');
-    const suggestionsList = document.getElementById('suggestions');
-    const ratingModal = document.getElementById('rating-modal');
-    const urlParams = new URLSearchParams(window.location.search);
-    const salaId = urlParams.get('dj');
-    const starsContainer = document.querySelector('.stars');
-    const stars = document.querySelectorAll('.stars span');
-    const params = new URLSearchParams(window.location.search);
-        // Si NO hay un parámetro 'dj' en la URL (alguien que abre la app)...
-        if (!params.has('dj')) {
-            // ...lo redirigimos inmediatamente al registro.
-            // Usamos .replace() para que no pueda volver atrás en el historial.
-            window.location.replace('/register.html');
-        }
-
-    if (!salaId) {
-        document.body.innerHTML = "<h1>Error: Este QR no es válido.</h1>";
-    }
-
-    // --- LÓGICA DE BÚSQUEDA ---
-    // (Esta parte no cambia)
-    let searchTimeout;
-    searchInput.addEventListener('keyup', () => {
-        clearTimeout(searchTimeout);
-        const query = searchInput.value;
-        if (query.length < 3) {
-            suggestionsList.innerHTML = ''; return;
-        }
-        searchTimeout = setTimeout(async () => {
-            const response = await fetch(`${serverUrl}/search?q=${encodeURIComponent(query)}`);
-            const songs = await response.json();
-            suggestionsList.innerHTML = '';
-            songs.forEach(song => {
-                const item = document.createElement('li');
-                item.dataset.titulo = song.titulo;
-                item.dataset.artista = song.artista;
-                item.textContent = `${song.titulo} - ${song.artista}`;
-                suggestionsList.appendChild(item);
-            });
-        }, 300);
-    });
-
-    // --- LÓGICA DE CLIC ---
-    // (Esta parte no cambia)
-    suggestionsList.addEventListener('click', (event) => {
-        const listItem = event.target.closest('li');
-        if (listItem) {
-            const song = {
-                titulo: listItem.dataset.titulo,
-                artista: listItem.dataset.artista
-            };
-            selectSong(song);
-        }
-    });
-
-    function selectSong(song) {
-        socket.emit('nueva-cancion', { salaId: salaId, titulo: song.titulo, artista: song.artista });
-        searchInput.value = '';
-        suggestionsList.innerHTML = '';
-        ratingModal.style.display = 'flex';
-    }
-
-    // --- ¡NUEVA! LÓGICA DE ESTRELLAS INTERACTIVAS ---
-    stars.forEach(star => {
-        // Evento para cuando se hace clic en una estrella
-        star.addEventListener('click', () => {
-            const djUsername = salaId.substring(0, salaId.lastIndexOf('-')) || salaId;
-            const rating = star.getAttribute('data-value');
-            socket.emit('submit-rating', { djUsername: djUsername, rating: Number(rating) });
-            alert(`¡Gracias por tu puntuación de ${rating} estrellas!`);
-            ratingModal.style.display = 'none';
-        });
-    });
-
-    // Evento para cuando el ratón se mueve sobre el contenedor de estrellas
-    starsContainer.addEventListener('mouseover', (event) => {
-        if (event.target.matches('.star')) {
-            const rating = event.target.getAttribute('data-value');
-            stars.forEach(s => {
-                s.classList.toggle('lit', s.getAttribute('data-value') <= rating);
-            });
-        }
-    });
-
-    // Evento para cuando el ratón sale del contenedor de estrellas
-    starsContainer.addEventListener('mouseout', () => {
-        stars.forEach(s => s.classList.remove('lit'));
-    });
     
-    document.getElementById('close-modal').addEventListener('click', () => {
-        ratingModal.style.display = 'none';
-    });
-</script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- CONFIGURACIÓN INICIAL ---
+            const serverUrl = "https://djapp.duckdns.org";
+            const socket = io(serverUrl, { transports: ["websocket"] });
+            const searchInput = document.getElementById('search-input');
+            const suggestionsList = document.getElementById('suggestions');
+            const ratingModal = document.getElementById('rating-modal');
+            const urlParams = new URLSearchParams(window.location.search);
+            const salaId = urlParams.get('dj');
+            const stars = document.querySelectorAll('.stars span');
+
+            if (!salaId) {
+                document.body.innerHTML = "<h1>Error: Este QR no es válido o la fiesta no existe.</h1>";
+                return; // Detiene la ejecución si no hay ID de sala
+            }
+
+            // --- LÓGICA DE BÚSQUEDA ---
+            let searchTimeout;
+            searchInput.addEventListener('keyup', () => {
+                clearTimeout(searchTimeout);
+                const query = searchInput.value;
+                if (query.length < 3) {
+                    suggestionsList.innerHTML = ''; return;
+                }
+                searchTimeout = setTimeout(async () => {
+                    const response = await fetch(`${serverUrl}/search?q=${encodeURIComponent(query)}`);
+                    const songs = await response.json();
+                    suggestionsList.innerHTML = '';
+                    songs.forEach(song => {
+                        const item = document.createElement('li');
+                        item.dataset.titulo = song.titulo;
+                        item.dataset.artista = song.artista;
+                        item.textContent = `${song.titulo} - ${song.artista}`;
+                        suggestionsList.appendChild(item);
+                    });
+                }, 300);
+            });
+
+            // --- LÓGICA DE CLIC EN SUGERENCIA ---
+            suggestionsList.addEventListener('click', (event) => {
+                const listItem = event.target.closest('li');
+                if (listItem) {
+                    const song = {
+                        titulo: listItem.dataset.titulo,
+                        artista: listItem.dataset.artista
+                    };
+                    selectSong(song);
+                }
+            });
+
+            function selectSong(song) {
+                socket.emit('nueva-cancion', { salaId: salaId, titulo: song.titulo, artista: song.artista });
+                searchInput.value = '';
+                suggestionsList.innerHTML = '';
+                ratingModal.style.display = 'flex';
+            }
+
+            // --- LÓGICA DE VALORACIÓN (CORREGIDA) ---
+            stars.forEach(star => {
+                star.addEventListener('click', () => {
+                    const rating = star.getAttribute('data-value');
+                    // Enviamos el ID de la fiesta (salaId), que es lo que el servidor espera
+                    socket.emit('submit-rating', { partyId: salaId, rating: Number(rating) });
+                    alert(`¡Gracias por tu puntuación de ${rating} estrellas!`);
+                    ratingModal.style.display = 'none';
+                });
+            });
+
+            document.getElementById('close-modal').addEventListener('click', () => {
+                ratingModal.style.display = 'none';
+            });
+        });
+    </script>
 </body>
 </html>
