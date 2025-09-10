@@ -51,7 +51,7 @@ let spotifyToken = null;
 
 // --- CONFIGURACIÓN DEL SERVICIO DE CORREO ---
 const mailerConfig = {
-    host: 'smtp.sendgrid.net', // O el host de tu proveedor
+    host: 'smtp.sendgrid.net',
     port: 587,
     auth: {
         user: 'apikey',
