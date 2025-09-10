@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <title>Ranking de DJs</title>
     <link rel="stylesheet" href="/css/style.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@capacitor/core@latest/dist/capacitor.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@capacitor/app@latest/dist/plugin.js"></script>
 </head>
 <body>
     <h1>🏆 Ranking de DJs</h1>
@@ -46,7 +49,24 @@
             }
         }
         loadRanking();
-    </script>
 
+        // --- CÓDIGO AÑADIDO PARA EL BOTÓN "ATRÁS" NATIVO ---
+        // Espera a que el objeto Capacitor esté listo
+        window.addEventListener('capacitorDidLoad', () => {
+            const Capacitor = window.Capacitor;
+            const { App } = Capacitor.Plugins;
+
+            if (Capacitor.isNativePlatform()) {
+                App.addListener('backButton', ({ canGoBack }) => {
+                    if (canGoBack) {
+                        window.history.back(); // Si puede ir atrás, va atrás
+                    } else {
+                        // Opcional: si no hay historial, se podría salir de la app
+                        // App.exitApp(); 
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>
