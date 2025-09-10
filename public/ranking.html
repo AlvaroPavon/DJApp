@@ -27,8 +27,12 @@
         const token = localStorage.getItem('dj-token');
         if (!token) window.location.href = '/login.html';
 
+        // --- LÍNEA AÑADIDA ---
+        const serverUrl = "https://djapp.duckdns.org";
+
         async function loadRanking() {
-            const response = await fetch('/ranking', {
+            // --- LÍNEA MODIFICADA ---
+            const response = await fetch(`${serverUrl}/ranking`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -50,15 +54,11 @@
         }
         loadRanking();
 
-        // --- LÓGICA MEJORADA PARA VOLVER ATRÁS ---
-
-        // 1. Para el enlace de la página
         document.getElementById('back-link').addEventListener('click', (e) => {
-            e.preventDefault(); // Evita que el enlace navegue a '#'
-            window.history.back(); // Vuelve a la página anterior en el historial
+            e.preventDefault();
+            window.history.back();
         });
 
-        // 2. Para el botón físico de Android
         window.addEventListener('capacitorDidLoad', () => {
             const Capacitor = window.Capacitor;
             const { App } = Capacitor.Plugins;
