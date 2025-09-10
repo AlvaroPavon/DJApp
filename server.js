@@ -182,7 +182,7 @@ app.get('/search', async (req, res) => {
     }
 });
 
-// -- RUTA PROTEGIDA PARA EL RANKING --
+// -- RUTAS PROTEGIDAS (Requieren Token) --
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -217,6 +217,33 @@ app.get('/ranking', authenticateToken, async (req, res) => {
     }
 });
 
+
+// --- RUTAS NUEVAS PARA GESTIONAR LA FIESTA ACTIVA ---
+
+// Ruta para OBTENER la fiesta activa del DJ logueado
+app.get('/api/active-party', authenticateToken, async (req, res) => {
+    try {
+        const dj = await DJ.findById(req.user.id);
+        if (!dj) {
+            return res.status(404).json({ message: 'DJ no encontrado.' });
+        }
+        res.json({ activePartyId: dj.activePartyId });
+    } catch (error) {
+        res.status(500).json({ message: 'Error en el servidor.' });
+    }
+});
+
+// Ruta para FINALIZAR la fiesta activa del DJ logueado
+app.post('/api/end-party', authenticateToken, async (req, res) => {
+    try {
+        await DJ.updateOne({ _id: req.user.id }, { activePartyId: null });
+        res.json({ message: 'Fiesta finalizada con éxito.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error en el servidor.' });
+    }
+});
+
+
 // --- 6. LÓGICA DE SOCKET.IO (TIEMPO REAL) ---
 io.on('connection', (socket) => {
     console.log(`🔌 Un cliente se ha conectado: ${socket.id}`);
@@ -232,8 +259,6 @@ io.on('connection', (socket) => {
             socket.join(partyId);
             console.log(`🎧 DJ ${djUsername} se ha unido a su sala: ${partyId}`);
             
-            // --- LÍNEA MODIFICADA ---
-            // Actualizamos el perfil del DJ para guardar su fiesta activa.
             await DJ.updateOne({ username: djUsername }, { activePartyId: partyId });
     
             const party = await Party.findOneAndUpdate(
