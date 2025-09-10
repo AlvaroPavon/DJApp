@@ -48,8 +48,11 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Ahora Capacitor está disponible globalmente, lo obtenemos del objeto 'window'
-            const { App, Share, Capacitor } = window.Capacitor.Plugins;
+            // --- LÍNEAS CORREGIDAS ---
+            // Primero obtenemos el objeto Capacitor principal de la ventana global
+            const Capacitor = window.Capacitor;
+            // Luego, obtenemos los plugins de la propiedad .Plugins
+            const { App, Share } = Capacitor.Plugins;
 
             const token = localStorage.getItem('dj-token');
             if (!token) {
