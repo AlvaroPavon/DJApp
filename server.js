@@ -16,14 +16,12 @@ const DJ = require('./djModel.js');
 const Party = require('./partyModel.js');
 
 // --- 2. CONFIGURACIÓN INICIAL ---
-
-
 const app = express();
 const server = http.createServer(app);
 
 // Opciones de CORS para permitir la web y la app móvil
 const corsOptions = {
-    origin: ["http://localhost:3000", "https://localhost"],
+    origin: ["http://localhost:3000", "https://localhost", "https://djapp.duckdns.org"],
     methods: ["GET", "POST"]
 };
 
