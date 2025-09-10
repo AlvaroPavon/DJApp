@@ -42,10 +42,10 @@
     
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script type="module">
-        // --- 1. IMPORTACIONES (Cambiadas a jsDelivr para evitar error CORS) ---
-        import { App } from 'https://cdn.jsdelivr.net/npm/@capacitor/app@latest/dist/esm/index.js';
-        import { Share } from 'https://cdn.jsdelivr.net/npm/@capacitor/share@latest/dist/esm/index.js';
-        import { Capacitor } from 'https://cdn.jsdelivr.net/npm/@capacitor/core@latest/dist/esm/index.js';
+        // --- 1. IMPORTACIONES (URLs corregidas para apuntar a los archivos correctos) ---
+        import { App } from 'https://cdn.jsdelivr.net/npm/@capacitor/app@latest/dist/plugin.js';
+        import { Share } from 'https://cdn.jsdelivr.net/npm/@capacitor/share@latest/dist/plugin.js';
+        import { Capacitor } from 'https://cdn.jsdelivr.net/npm/@capacitor/core@latest/dist/capacitor.js';
 
         // --- 2. LÓGICA QUE ESPERA AL HTML ---
         document.addEventListener('DOMContentLoaded', () => {
