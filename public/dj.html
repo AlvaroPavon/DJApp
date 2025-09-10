@@ -5,8 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel del DJ</title>
     
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1/build/qrcode.min.js"></script>
     <link rel="stylesheet" href="/css/style.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1/build/qrcode.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@capacitor/core@latest/dist/capacitor.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@capacitor/app@latest/dist/plugin.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@capacitor/share@latest/dist/plugin.js"></script>
 </head>
 <body>
     <div class="container">
@@ -40,17 +46,10 @@
         </div>
     </div>
     
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <script type="module">
-        // --- 1. IMPORTACIONES DE CAPACITOR ---
-        // Importamos el núcleo y los scripts de los plugins
-        import Capacitor from 'https://cdn.jsdelivr.net/npm/@capacitor/core@latest/dist/capacitor.js';
-        import 'https://cdn.jsdelivr.net/npm/@capacitor/app@latest/dist/plugin.js';
-        import 'https://cdn.jsdelivr.net/npm/@capacitor/share@latest/dist/plugin.js';
-
+    <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Obtenemos los plugins del objeto global de Capacitor
-            const { App, Share } = Capacitor.Plugins;
+            // Ahora Capacitor está disponible globalmente, lo obtenemos del objeto 'window'
+            const { App, Share, Capacitor } = window.Capacitor.Plugins;
 
             const token = localStorage.getItem('dj-token');
             if (!token) {
@@ -195,7 +194,7 @@
 
                 shareQrBtn.onclick = async () => {
                     const dataUrl = canvas.toDataURL('image/png');
-
+                    
                     if (Capacitor.isNativePlatform()) {
                         await Share.share({
                             title: `Código QR para la fiesta ${currentPartyId}`,
