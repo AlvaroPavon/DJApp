@@ -42,179 +42,177 @@
     
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script type="module">
-    // --- ENVOLTORIO AÑADIDO PARA ESPERAR LA CARGA DEL DOM ---
-    document.addEventListener('DOMContentLoaded', () => {
-
-        // Importamos los plugins de Capacitor que usaremos de forma segura
+        // --- 1. IMPORTACIONES (SIEMPRE ARRIBA Y AFUERA) ---
         import { App } from 'https://unpkg.com/@capacitor/app@latest/dist/esm/index.js';
         import { Share } from 'https://unpkg.com/@capacitor/share@latest/dist/esm/index.js';
         import { Capacitor } from 'https://unpkg.com/@capacitor/core@latest/dist/esm/index.js';
 
-        // --- 1. LÓGICA PRINCIPAL ---
-        const token = localStorage.getItem('dj-token');
-        if (!token) {
-            window.location.href = '/login.html';
-        }
-
-        const partySetupSection = document.getElementById('party-setup');
-        const dashboardContentSection = document.getElementById('dashboard-content');
-        const createPartyBtn = document.getElementById('create-party-btn');
-        const partyNameInput = document.getElementById('party-name-input');
-        
-        const urlParams = new URLSearchParams(window.location.search);
-        let partyId = urlParams.get('dj');
-        
-        if (!partyId) {
-            partyId = localStorage.getItem('activePartyId');
-        }
-
-        if (partyId) {
-            partySetupSection.style.display = 'none';
-            dashboardContentSection.style.display = 'block';
-            runDashboard(partyId);
-        } else {
-            partySetupSection.style.display = 'block';
-            dashboardContentSection.style.display = 'none';
-        }
-
-        createPartyBtn.addEventListener('click', () => {
-            const customName = partyNameInput.value.trim();
-            if (!customName) {
-                alert('Por favor, escribe un nombre para la fiesta.');
-                return;
+        // --- 2. LÓGICA QUE ESPERA AL HTML ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('dj-token');
+            if (!token) {
+                window.location.href = '/login.html';
             }
-            const cleanName = customName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-            const randomString = Math.random().toString(36).substring(2, 8);
-            const uniquePartyId = `${cleanName}-${randomString}`;
-            window.location.href = `dj.html?dj=${uniquePartyId}`;
-        });
 
-        function runDashboard(currentPartyId) {
-            localStorage.setItem('activePartyId', currentPartyId);
+            const partySetupSection = document.getElementById('party-setup');
+            const dashboardContentSection = document.getElementById('dashboard-content');
+            const createPartyBtn = document.getElementById('create-party-btn');
+            const partyNameInput = document.getElementById('party-name-input');
             
-            document.getElementById('dj-name').textContent = `ID del Evento: ${currentPartyId}`;
-            const listaCanciones = document.getElementById('lista-canciones');
-            const btnNuevaFiesta = document.getElementById('btn-nueva-fiesta');
-            const shareQrBtn = document.getElementById('share-qr-btn');
+            const urlParams = new URLSearchParams(window.location.search);
+            let partyId = urlParams.get('dj');
             
-            const serverUrl = "https://djapp.duckdns.org";
-            
-            const socket = io(serverUrl, { 
-                auth: { token }, 
-                transports: ["websocket"] 
-            });
+            if (!partyId) {
+                partyId = localStorage.getItem('activePartyId');
+            }
 
-            socket.on('connect_error', (err) => {
-                if (err.message.includes('Authentication error')) {
-                    localStorage.removeItem('dj-token');
-                    window.location.href = '/login.html';
+            if (partyId) {
+                partySetupSection.style.display = 'none';
+                dashboardContentSection.style.display = 'block';
+                runDashboard(partyId);
+            } else {
+                partySetupSection.style.display = 'block';
+                dashboardContentSection.style.display = 'none';
+            }
+
+            createPartyBtn.addEventListener('click', () => {
+                const customName = partyNameInput.value.trim();
+                if (!customName) {
+                    alert('Por favor, escribe un nombre para la fiesta.');
+                    return;
                 }
-            });
-            
-            socket.emit('join-dj-room', currentPartyId);
-            
-            const createSongItem = (cancion) => {
-                const item = document.createElement('li');
-                item.className = 'cancion-item';
-                item.id = cancion._id;
-                if (cancion.played) item.classList.add('played');
-                item.innerHTML = `
-                    <div class="cancion-info">
-                        <strong>${cancion.titulo}</strong>
-                        <em>${cancion.artista} (Pedido a las ${cancion.hora})</em>
-                    </div>
-                    <button class="btn-played" data-songid="${cancion._id}" ${cancion.played ? 'disabled' : ''}>
-                        ${cancion.played ? 'Puesta ✓' : 'Marcar Puesta'}
-                    </button>`;
-                return item;
-            };
-
-            socket.on('load-initial-songs', (songs) => {
-                listaCanciones.innerHTML = '';
-                songs.forEach(cancion => listaCanciones.appendChild(createSongItem(cancion)));
+                const cleanName = customName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                const randomString = Math.random().toString(36).substring(2, 8);
+                const uniquePartyId = `${cleanName}-${randomString}`;
+                window.location.href = `dj.html?dj=${uniquePartyId}`;
             });
 
-            socket.on('recibir-cancion', (cancion) => {
-                listaCanciones.prepend(createSongItem(cancion));
-            });
+            function runDashboard(currentPartyId) {
+                localStorage.setItem('activePartyId', currentPartyId);
+                
+                document.getElementById('dj-name').textContent = `ID del Evento: ${currentPartyId}`;
+                const listaCanciones = document.getElementById('lista-canciones');
+                const btnNuevaFiesta = document.getElementById('btn-nueva-fiesta');
+                const shareQrBtn = document.getElementById('share-qr-btn');
+                
+                const serverUrl = "https://djapp.duckdns.org";
+                
+                const socket = io(serverUrl, { 
+                    auth: { token }, 
+                    transports: ["websocket"] 
+                });
 
-            socket.on('song-was-played', (songId) => {
-                const item = document.getElementById(songId);
-                if (item) {
-                    item.classList.add('played');
-                    const button = item.querySelector('.btn-played');
-                    button.textContent = 'Puesta ✓';
-                    button.disabled = true;
-                }
-            });
-
-            listaCanciones.addEventListener('click', (event) => {
-                const button = event.target.closest('.btn-played');
-                if (button && !button.disabled) {
-                    const songId = button.getAttribute('data-songid');
-                    socket.emit('mark-song-as-played', { partyId: currentPartyId, songId: songId });
-                }
-            });
-
-            btnNuevaFiesta.addEventListener('click', () => {
-                if (confirm('¿Seguro que quieres limpiar la vista de peticiones? Esto no las borrará de la base de datos.')) {
-                    const songItems = listaCanciones.querySelectorAll('.cancion-item');
-                    if (songItems.length === 0) return;
-                    songItems.forEach((item, index) => {
-                        setTimeout(() => {
-                            item.classList.add('removing');
-                            item.addEventListener('animationend', () => item.remove());
-                        }, index * 50);
-                    });
-                }
-            });
-            
-            const guestUrl = `${serverUrl}/index.html?dj=${currentPartyId}`;
-            const qrcodeContainer = document.getElementById('qrcode-container');
-            qrcodeContainer.innerHTML = '';
-            QRCode.toCanvas(guestUrl, { width: 300, margin: 1 }, (error, canvas) => {
-                if (error) return console.error(error);
-                qrcodeContainer.appendChild(canvas);
-                shareQrBtn.style.display = 'block';
-
-                shareQrBtn.onclick = async () => {
-                    const dataUrl = canvas.toDataURL('image/png');
-
-                    if (Capacitor.isNativePlatform()) {
-                        await Share.share({
-                            title: `Código QR para la fiesta ${currentPartyId}`,
-                            text: 'Escanea este código para pedir canciones.',
-                            url: dataUrl,
-                        });
-                    } else {
-                        const link = document.createElement('a');
-                        link.href = dataUrl;
-                        link.download = `qr-fiesta-${currentPartyId}.png`;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                    }
-                };
-            });
-            
-            const endPartyBtn = document.getElementById('end-party-btn');
-            endPartyBtn.addEventListener('click', () => {
-                if (confirm('¿Estás seguro de que quieres finalizar esta fiesta? El QR dejará de funcionar para los nuevos escaneos y tendrás que crear una nueva.')) {
-                    localStorage.removeItem('activePartyId');
-                    window.location.href = '/dj.html';
-                }
-            });
-
-            if (Capacitor.isNativePlatform()) {
-                App.addListener('appStateChange', ({ isActive }) => {
-                    if (isActive && !socket.connected) {
-                        console.log('App activa, reconectando socket...');
-                        socket.connect();
+                socket.on('connect_error', (err) => {
+                    if (err.message.includes('Authentication error')) {
+                        localStorage.removeItem('dj-token');
+                        window.location.href = '/login.html';
                     }
                 });
+                
+                socket.emit('join-dj-room', currentPartyId);
+                
+                const createSongItem = (cancion) => {
+                    const item = document.createElement('li');
+                    item.className = 'cancion-item';
+                    item.id = cancion._id;
+                    if (cancion.played) item.classList.add('played');
+                    item.innerHTML = `
+                        <div class="cancion-info">
+                            <strong>${cancion.titulo}</strong>
+                            <em>${cancion.artista} (Pedido a las ${cancion.hora})</em>
+                        </div>
+                        <button class="btn-played" data-songid="${cancion._id}" ${cancion.played ? 'disabled' : ''}>
+                            ${cancion.played ? 'Puesta ✓' : 'Marcar Puesta'}
+                        </button>`;
+                    return item;
+                };
+
+                socket.on('load-initial-songs', (songs) => {
+                    listaCanciones.innerHTML = '';
+                    songs.forEach(cancion => listaCanciones.appendChild(createSongItem(cancion)));
+                });
+
+                socket.on('recibir-cancion', (cancion) => {
+                    listaCanciones.prepend(createSongItem(cancion));
+                });
+
+                socket.on('song-was-played', (songId) => {
+                    const item = document.getElementById(songId);
+                    if (item) {
+                        item.classList.add('played');
+                        const button = item.querySelector('.btn-played');
+                        button.textContent = 'Puesta ✓';
+                        button.disabled = true;
+                    }
+                });
+
+                listaCanciones.addEventListener('click', (event) => {
+                    const button = event.target.closest('.btn-played');
+                    if (button && !button.disabled) {
+                        const songId = button.getAttribute('data-songid');
+                        socket.emit('mark-song-as-played', { partyId: currentPartyId, songId: songId });
+                    }
+                });
+
+                btnNuevaFiesta.addEventListener('click', () => {
+                    if (confirm('¿Seguro que quieres limpiar la vista de peticiones? Esto no las borrará de la base de datos.')) {
+                        const songItems = listaCanciones.querySelectorAll('.cancion-item');
+                        if (songItems.length === 0) return;
+                        songItems.forEach((item, index) => {
+                            setTimeout(() => {
+                                item.classList.add('removing');
+                                item.addEventListener('animationend', () => item.remove());
+                            }, index * 50);
+                        });
+                    }
+                });
+                
+                const guestUrl = `${serverUrl}/index.html?dj=${currentPartyId}`;
+                const qrcodeContainer = document.getElementById('qrcode-container');
+                qrcodeContainer.innerHTML = '';
+                QRCode.toCanvas(guestUrl, { width: 300, margin: 1 }, (error, canvas) => {
+                    if (error) return console.error(error);
+                    qrcodeContainer.appendChild(canvas);
+                    shareQrBtn.style.display = 'block';
+
+                    shareQrBtn.onclick = async () => {
+                        const dataUrl = canvas.toDataURL('image/png');
+
+                        if (Capacitor.isNativePlatform()) {
+                            await Share.share({
+                                title: `Código QR para la fiesta ${currentPartyId}`,
+                                text: 'Escanea este código para pedir canciones.',
+                                url: dataUrl,
+                            });
+                        } else {
+                            const link = document.createElement('a');
+                            link.href = dataUrl;
+                            link.download = `qr-fiesta-${currentPartyId}.png`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        }
+                    };
+                });
+                
+                const endPartyBtn = document.getElementById('end-party-btn');
+                endPartyBtn.addEventListener('click', () => {
+                    if (confirm('¿Estás seguro de que quieres finalizar esta fiesta? El QR dejará de funcionar para los nuevos escaneos y tendrás que crear una nueva.')) {
+                        localStorage.removeItem('activePartyId');
+                        window.location.href = '/dj.html';
+                    }
+                });
+
+                if (Capacitor.isNativePlatform()) {
+                    App.addListener('appStateChange', ({ isActive }) => {
+                        if (isActive && !socket.connected) {
+                            console.log('App activa, reconectando socket...');
+                            socket.connect();
+                        }
+                    });
+                }
             }
-        }
-    }); // --- CIERRE DEL ENVOLTORIO DOMCONTENTLOADED ---
+        });
     </script>
 </body>
 </html>
