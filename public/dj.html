@@ -57,7 +57,6 @@
                 window.location.href = '/login.html';
             }
 
-            // --- URL DEL SERVIDOR DEFINIDA ---
             const serverUrl = "https://djapp.duckdns.org";
 
             const partySetupSection = document.getElementById('party-setup');
@@ -71,7 +70,6 @@
 
                 if (!partyId) {
                     try {
-                        // --- LLAMADA A LA API CORREGIDA ---
                         const response = await fetch(`${serverUrl}/api/active-party`, {
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
@@ -231,19 +229,27 @@
                     }
                 };
                 
+                // --- LÓGICA DEL BOTÓN COMPLETAMENTE MODIFICADA ---
                 const endPartyBtn = document.getElementById('end-party-btn');
                 endPartyBtn.addEventListener('click', async () => {
                     if (confirm('¿Estás seguro de que quieres finalizar esta fiesta?')) {
                         try {
-                            // --- LLAMADA A LA API CORREGIDA ---
-                            await fetch(`${serverUrl}/api/end-party`, {
+                            const response = await fetch(`${serverUrl}/api/end-party`, {
                                 method: 'POST',
                                 headers: { 'Authorization': `Bearer ${token}` }
                             });
-                            window.location.href = '/dj.html';
+
+                            // Solo redirigimos si el servidor da una respuesta OK
+                            if (response.ok) {
+                                window.location.href = '/dj.html';
+                            } else {
+                                // Si el servidor da un error, lo mostramos
+                                const errorData = await response.json();
+                                alert(`Error al finalizar la fiesta: ${errorData.message || 'Respuesta no válida del servidor.'}`);
+                            }
                         } catch (error) {
-                            console.error('Error al finalizar la fiesta:', error);
-                            alert('No se pudo finalizar la fiesta. Inténtalo de nuevo.');
+                            console.error('Error de red al finalizar la fiesta:', error);
+                            alert('No se pudo finalizar la fiesta. Revisa tu conexión.');
                         }
                     }
                 });
