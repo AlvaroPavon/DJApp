@@ -33,7 +33,7 @@
                 <h3>QR de la Fiesta</h3>
                 <p>Muestra o imprime este QR para que tus invitados pidan canciones.</p>
                 <div id="qrcode-container"></div>
-                <button id="share-qr-btn" style="display: none;">Compartir / Guardar QR</button>
+                <button id="share-qr-btn" style="display: none;">Guardar QR</button>
             </div>
             <button id="btn-nueva-fiesta" style="margin-top: 20px;">🎉 Limpiar Lista</button>
             <button id="end-party-btn" style="background-color: var(--color-error); margin-top: 10px;">Finalizar y Crear Nueva Fiesta</button>
@@ -42,18 +42,8 @@
     
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script type="module">
-        // --- 1. IMPORTACIONES CORREGIDAS ---
-        // Se importa Capacitor como un default export (sin llaves)
-        import Capacitor from 'https://cdn.jsdelivr.net/npm/@capacitor/core@latest/dist/capacitor.js';
-        // Se importan los scripts de los plugins para que se registren
-        import 'https://cdn.jsdelivr.net/npm/@capacitor/app@latest/dist/plugin.js';
-        import 'https://cdn.jsdelivr.net/npm/@capacitor/share@latest/dist/plugin.js';
-
         // --- 2. LÓGICA QUE ESPERA AL HTML ---
         document.addEventListener('DOMContentLoaded', () => {
-            // Obtenemos los plugins del objeto global de Capacitor
-            const { App, Share } = Capacitor.Plugins;
-
             const token = localStorage.getItem('dj-token');
             if (!token) {
                 window.location.href = '/login.html';
@@ -180,23 +170,14 @@
                     qrcodeContainer.appendChild(canvas);
                     shareQrBtn.style.display = 'block';
 
-                    shareQrBtn.onclick = async () => {
+                    shareQrBtn.onclick = () => {
                         const dataUrl = canvas.toDataURL('image/png');
-
-                        if (Capacitor.isNativePlatform()) {
-                            await Share.share({
-                                title: `Código QR para la fiesta ${currentPartyId}`,
-                                text: 'Escanea este código para pedir canciones.',
-                                url: dataUrl,
-                            });
-                        } else {
-                            const link = document.createElement('a');
-                            link.href = dataUrl;
-                            link.download = `qr-fiesta-${currentPartyId}.png`;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                        }
+                        const link = document.createElement('a');
+                        link.href = dataUrl;
+                        link.download = `qr-fiesta-${currentPartyId}.png`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
                     };
                 });
                 
@@ -207,15 +188,6 @@
                         window.location.href = '/dj.html';
                     }
                 });
-
-                if (Capacitor.isNativePlatform()) {
-                    App.addListener('appStateChange', ({ isActive }) => {
-                        if (isActive && !socket.connected) {
-                            console.log('App activa, reconectando socket...');
-                            socket.connect();
-                        }
-                    });
-                }
             }
         });
     </script>
