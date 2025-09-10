@@ -13,7 +13,11 @@ const djSchema = new mongoose.Schema({
     ratings: [{
         value: Number,
         date: { type: Date, default: Date.now }
-    }]
+    }],
+    
+    // --- CAMPO NUEVO ---
+    // Guardará el ID de la fiesta que está activa en este momento.
+    activePartyId: { type: String, default: null }
 });
 
 module.exports = mongoose.model('DJ', djSchema);
