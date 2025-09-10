@@ -17,6 +17,7 @@
                 <th>Posición</th>
                 <th>DJ</th>
                 <th>Puntuación Media</th>
+                <th>Total Valoraciones</th>
                 <th>Fiestas Realizadas</th>
             </tr>
         </thead>
@@ -27,11 +28,9 @@
         const token = localStorage.getItem('dj-token');
         if (!token) window.location.href = '/login.html';
 
-        // --- LÍNEA AÑADIDA ---
         const serverUrl = "https://djapp.duckdns.org";
 
         async function loadRanking() {
-            // --- LÍNEA MODIFICADA ---
             const response = await fetch(`${serverUrl}/ranking`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -45,6 +44,7 @@
                             <td data-label="Posición">${index + 1}</td>
                             <td data-label="DJ">${dj.username}</td>
                             <td data-label="Puntuación Media">${dj.averageRating} ★</td>
+                            <td data-label="Total Valoraciones">${dj.totalRatings}</td>
                             <td data-label="Fiestas Realizadas">${dj.partyCount}</td>
                         </tr>`;
                 });
