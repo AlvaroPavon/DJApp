@@ -28,7 +28,6 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- CONFIGURACIÓN INICIAL ---
             const serverUrl = "https://djapp.duckdns.org";
             const socket = io(serverUrl, { transports: ["websocket"] });
             const searchInput = document.getElementById('search-input');
@@ -38,9 +37,11 @@
             const salaId = urlParams.get('dj');
             const stars = document.querySelectorAll('.stars span');
 
+            // --- LÓGICA MODIFICADA ---
+            // Si no hay ID de sala en la URL, redirige al login.
             if (!salaId) {
-                document.body.innerHTML = "<h1>Error: Este QR no es válido o la fiesta no existe.</h1>";
-                return; // Detiene la ejecución si no hay ID de sala
+                window.location.href = '/login.html';
+                return; // Detiene la ejecución del resto del script
             }
 
             // --- LÓGICA DE BÚSQUEDA ---
@@ -84,11 +85,10 @@
                 ratingModal.style.display = 'flex';
             }
 
-            // --- LÓGICA DE VALORACIÓN (CORREGIDA) ---
+            // --- LÓGICA DE VALORACIÓN ---
             stars.forEach(star => {
                 star.addEventListener('click', () => {
                     const rating = star.getAttribute('data-value');
-                    // Enviamos el ID de la fiesta (salaId), que es lo que el servidor espera
                     socket.emit('submit-rating', { partyId: salaId, rating: Number(rating) });
                     alert(`¡Gracias por tu puntuación de ${rating} estrellas!`);
                     ratingModal.style.display = 'none';
