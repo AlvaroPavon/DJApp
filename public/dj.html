@@ -42,13 +42,12 @@
     
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script type="module">
-        // --- 1. IMPORTACIONES CORRECTAS PARA CAPACITOR DESDE CDN ---
-        // Se importa el núcleo de Capacitor
-        import { Capacitor } from 'https://cdn.jsdelivr.net/npm/@capacitor/core@latest/dist/capacitor.js';
+        // --- 1. IMPORTACIONES CORREGIDAS ---
+        // Se importa Capacitor como un default export (sin llaves)
+        import Capacitor from 'https://cdn.jsdelivr.net/npm/@capacitor/core@latest/dist/capacitor.js';
         // Se importan los scripts de los plugins para que se registren
         import 'https://cdn.jsdelivr.net/npm/@capacitor/app@latest/dist/plugin.js';
         import 'https://cdn.jsdelivr.net/npm/@capacitor/share@latest/dist/plugin.js';
-
 
         // --- 2. LÓGICA QUE ESPERA AL HTML ---
         document.addEventListener('DOMContentLoaded', () => {
