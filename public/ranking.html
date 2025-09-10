@@ -10,7 +10,7 @@
 </head>
 <body>
     <h1>🏆 Ranking de DJs</h1>
-    <p><a href="/dj.html">Volver a mi panel</a></p>
+    <p><a href="#" id="back-link">Volver a mi panel</a></p>
     <table>
         <thead>
             <tr>
@@ -50,8 +50,15 @@
         }
         loadRanking();
 
-        // --- CÓDIGO AÑADIDO PARA EL BOTÓN "ATRÁS" NATIVO ---
-        // Espera a que el objeto Capacitor esté listo
+        // --- LÓGICA MEJORADA PARA VOLVER ATRÁS ---
+
+        // 1. Para el enlace de la página
+        document.getElementById('back-link').addEventListener('click', (e) => {
+            e.preventDefault(); // Evita que el enlace navegue a '#'
+            window.history.back(); // Vuelve a la página anterior en el historial
+        });
+
+        // 2. Para el botón físico de Android
         window.addEventListener('capacitorDidLoad', () => {
             const Capacitor = window.Capacitor;
             const { App } = Capacitor.Plugins;
@@ -59,10 +66,7 @@
             if (Capacitor.isNativePlatform()) {
                 App.addListener('backButton', ({ canGoBack }) => {
                     if (canGoBack) {
-                        window.history.back(); // Si puede ir atrás, va atrás
-                    } else {
-                        // Opcional: si no hay historial, se podría salir de la app
-                        // App.exitApp(); 
+                        window.history.back();
                     }
                 });
             }
