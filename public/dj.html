@@ -36,6 +36,7 @@
                 <button id="share-qr-btn" style="display: none;">Compartir / Guardar QR</button>
             </div>
             <button id="btn-nueva-fiesta" style="margin-top: 20px;">🎉 Limpiar Lista</button>
+            <button id="end-party-btn" style="background-color: var(--color-error); margin-top: 10px;">Finalizar y Crear Nueva Fiesta</button>
         </div>
     </div>
     
@@ -57,14 +58,24 @@
         const dashboardContentSection = document.getElementById('dashboard-content');
         const createPartyBtn = document.getElementById('create-party-btn');
         const partyNameInput = document.getElementById('party-name-input');
+        
+        // --- CÓDIGO MODIFICADO PARA RECUPERAR SESIÓN ---
         const urlParams = new URLSearchParams(window.location.search);
-        const partyId = urlParams.get('dj');
+        // Prioridad 1: Obtener el ID de la URL.
+        let partyId = urlParams.get('dj');
+        
+        // Prioridad 2: Si no hay ID en la URL, buscar en localStorage.
+        if (!partyId) {
+            partyId = localStorage.getItem('activePartyId');
+        }
 
         if (partyId) {
+            // Si encontramos una fiesta (de la URL o de localStorage), mostramos el panel.
             partySetupSection.style.display = 'none';
             dashboardContentSection.style.display = 'block';
             runDashboard(partyId);
         } else {
+            // Si no hay ninguna fiesta activa, mostramos el formulario de creación.
             partySetupSection.style.display = 'block';
             dashboardContentSection.style.display = 'none';
         }
@@ -82,6 +93,9 @@
         });
 
         function runDashboard(currentPartyId) {
+            // LÍNEA AÑADIDA PARA GUARDAR LA SESIÓN
+            localStorage.setItem('activePartyId', currentPartyId);
+            
             document.getElementById('dj-name').textContent = `ID del Evento: ${currentPartyId}`;
             const listaCanciones = document.getElementById('lista-canciones');
             const btnNuevaFiesta = document.getElementById('btn-nueva-fiesta');
@@ -89,7 +103,6 @@
             
             const serverUrl = "https://djapp.duckdns.org"; // Asegúrate de que este es tu dominio
             
-            // CONEXIÓN AL SERVIDOR (SINTAXIS CORREGIDA)
             const socket = io(serverUrl, { 
                 auth: { token }, 
                 transports: ["websocket"] 
@@ -160,7 +173,6 @@
                 }
             });
             
-            // LÓGICA DE GENERACIÓN Y COMPARTIR QR (REPARADA)
             const guestUrl = `${serverUrl}/index.html?dj=${currentPartyId}`;
             const qrcodeContainer = document.getElementById('qrcode-container');
             qrcodeContainer.innerHTML = '';
@@ -172,14 +184,12 @@
                 shareQrBtn.onclick = async () => {
                     const dataUrl = canvas.toDataURL('image/png');
                     try {
-                        // Intenta usar el plugin nativo de Capacitor para compartir
                         await Share.share({
                             title: `Código QR para la fiesta ${currentPartyId}`,
                             text: 'Escanea este código para pedir canciones.',
                             url: dataUrl,
                         });
                     } catch(err) {
-                        // Si falla (porque no es una app nativa), usa el método de descarga estándar
                         console.log("El plugin Share no está disponible, usando descarga normal.");
                         const link = document.createElement('a');
                         link.href = dataUrl;
@@ -189,7 +199,15 @@
                 };
             });
             
-            // LÓGICA NATIVA DE CAPACITOR (CORREGIDA)
+            // LÓGICA AÑADIDA PARA EL BOTÓN DE FINALIZAR FIESTA
+            const endPartyBtn = document.getElementById('end-party-btn');
+            endPartyBtn.addEventListener('click', () => {
+                if (confirm('¿Estás seguro de que quieres finalizar esta fiesta? El QR dejará de funcionar para los nuevos escaneos y tendrás que crear una nueva.')) {
+                    localStorage.removeItem('activePartyId');
+                    window.location.href = '/dj.html';
+                }
+            });
+
             if (Capacitor.isNativePlatform()) {
                 App.addListener('appStateChange', ({ isActive }) => {
                     if (isActive && !socket.connected) {
