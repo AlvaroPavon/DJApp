@@ -59,23 +59,18 @@
         const createPartyBtn = document.getElementById('create-party-btn');
         const partyNameInput = document.getElementById('party-name-input');
         
-        // --- CÓDIGO MODIFICADO PARA RECUPERAR SESIÓN ---
         const urlParams = new URLSearchParams(window.location.search);
-        // Prioridad 1: Obtener el ID de la URL.
         let partyId = urlParams.get('dj');
         
-        // Prioridad 2: Si no hay ID en la URL, buscar en localStorage.
         if (!partyId) {
             partyId = localStorage.getItem('activePartyId');
         }
 
         if (partyId) {
-            // Si encontramos una fiesta (de la URL o de localStorage), mostramos el panel.
             partySetupSection.style.display = 'none';
             dashboardContentSection.style.display = 'block';
             runDashboard(partyId);
         } else {
-            // Si no hay ninguna fiesta activa, mostramos el formulario de creación.
             partySetupSection.style.display = 'block';
             dashboardContentSection.style.display = 'none';
         }
@@ -93,7 +88,6 @@
         });
 
         function runDashboard(currentPartyId) {
-            // LÍNEA AÑADIDA PARA GUARDAR LA SESIÓN
             localStorage.setItem('activePartyId', currentPartyId);
             
             document.getElementById('dj-name').textContent = `ID del Evento: ${currentPartyId}`;
@@ -101,7 +95,7 @@
             const btnNuevaFiesta = document.getElementById('btn-nueva-fiesta');
             const shareQrBtn = document.getElementById('share-qr-btn');
             
-            const serverUrl = "https://djapp.duckdns.org"; // Asegúrate de que este es tu dominio
+            const serverUrl = "https://djapp.duckdns.org";
             
             const socket = io(serverUrl, { 
                 auth: { token }, 
@@ -181,25 +175,34 @@
                 qrcodeContainer.appendChild(canvas);
                 shareQrBtn.style.display = 'block';
 
+                // --- LÓGICA DE COMPARTIR/GUARDAR MEJORADA ---
                 shareQrBtn.onclick = async () => {
                     const dataUrl = canvas.toDataURL('image/png');
-                    try {
+
+                    // Detectamos si estamos en la app nativa o en la web
+                    if (Capacitor.isNativePlatform()) {
+                        // --- LÓGICA PARA MÓVIL (APP CAPACITOR) ---
+                        // Abre el menú de compartir nativo del teléfono
                         await Share.share({
                             title: `Código QR para la fiesta ${currentPartyId}`,
                             text: 'Escanea este código para pedir canciones.',
-                            url: dataUrl,
+                            url: dataUrl, // Pasamos la imagen como una URL de datos
                         });
-                    } catch(err) {
-                        console.log("El plugin Share no está disponible, usando descarga normal.");
+                    } else {
+                        // --- LÓGICA PARA NAVEGADOR WEB (PC) ---
+                        // Crea un enlace temporal para forzar la descarga
                         const link = document.createElement('a');
                         link.href = dataUrl;
                         link.download = `qr-fiesta-${currentPartyId}.png`;
+                        
+                        // Simula un clic en el enlace para iniciar la descarga
+                        document.body.appendChild(link);
                         link.click();
+                        document.body.removeChild(link);
                     }
                 };
             });
             
-            // LÓGICA AÑADIDA PARA EL BOTÓN DE FINALIZAR FIESTA
             const endPartyBtn = document.getElementById('end-party-btn');
             endPartyBtn.addEventListener('click', () => {
                 if (confirm('¿Estás seguro de que quieres finalizar esta fiesta? El QR dejará de funcionar para los nuevos escaneos y tendrás que crear una nueva.')) {
