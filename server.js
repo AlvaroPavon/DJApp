@@ -19,16 +19,12 @@ const Party = require('./partyModel.js');
 const app = express();
 const server = http.createServer(app);
 
-// Opciones de CORS para permitir la web y la app móvil
+// Opciones de CORS
 const corsOptions = {
-    origin: ["http://localhost:3000", "https://localhost", "https://djapp.duckdns.org"],
+    origin: ["http://localhost:3000", "https://localhost", "https://djapp.duckdns.org", "http://localhost:5173"],
     methods: ["GET", "POST"]
 };
-
-// Usamos el middleware de CORS para Express
 app.use(cors(corsOptions));
-
-// Configuramos CORS también para Socket.IO
 const io = new Server(server, {
   cors: corsOptions
 });
@@ -42,7 +38,7 @@ app.get('/', (_, res) => {
 });
 
 
-// --- 3. CONFIGURACIÓN DE CLAVES Y CONSTANTES (LEÍDAS DESDE .env) ---
+// --- 3. CONFIGURACIÓN DE CLAVES Y CONSTANTES ---
 const MONGO_URI = process.env.MONGO_URI;
 const JWT_SECRET = process.env.JWT_SECRET;
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
@@ -67,7 +63,6 @@ mongoose.connect(MONGO_URI)
 
 // --- 5. RUTAS Y LÓGICA DE LA API ---
 
-// -- RUTAS DE AUTENTICACIÓN Y CUENTA --
 app.post('/register', async (req, res) => {
     try {
         const { username, email, password } = req.body;
@@ -112,7 +107,7 @@ app.post('/forgot-password', async (req, res) => {
         }
         const resetToken = crypto.randomBytes(32).toString('hex');
         dj.passwordResetToken = resetToken;
-        dj.passwordResetExpires = Date.now() + 3600000; // Expira en 1 hora
+        dj.passwordResetExpires = Date.now() + 3600000;
         await dj.save();
         const resetUrl = `${process.env.APP_BASE_URL}/reset-password.html?token=${resetToken}`;
         await transporter.sendMail({
@@ -147,7 +142,6 @@ app.post('/reset-password', async (req, res) => {
     }
 });
 
-// -- LÓGICA DE SPOTIFY --
 const getSpotifyToken = async () => {
     try {
         const response = await axios.post('https://accounts.spotify.com/api/token', 'grant_type=client_credentials', {
@@ -169,7 +163,7 @@ app.get('/search', async (req, res) => {
     }
     const query = req.query.q;
     try {
-        const response = await axios.get(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=10`, {
+        const response = await axios.get(`https://api.spotify.com/v1/search?q=$${encodeURIComponent(query)}&type=track&limit=10`, {
             headers: { 'Authorization': `Bearer ${spotifyToken}` }
         });
         const tracks = response.data.tracks.items.map(track => ({
@@ -182,7 +176,6 @@ app.get('/search', async (req, res) => {
     }
 });
 
-// -- RUTAS PROTEGIDAS (Requieren Token) --
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -194,6 +187,7 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
+// --- RUTA DE RANKING MODIFICADA ---
 app.get('/ranking', authenticateToken, async (req, res) => {
     try {
         const djs = await DJ.find({}, 'username partyCount ratings');
@@ -201,10 +195,12 @@ app.get('/ranking', authenticateToken, async (req, res) => {
             const totalRatings = dj.ratings.length;
             const sumOfRatings = dj.ratings.reduce((acc, r) => acc + r.value, 0);
             const averageRating = totalRatings > 0 ? (sumOfRatings / totalRatings).toFixed(2) : 'Sin valoraciones';
+            
             return {
                 username: dj.username,
                 partyCount: dj.partyCount,
-                averageRating: averageRating
+                averageRating: averageRating,
+                totalRatings: totalRatings // Dato añadido
             };
         }).sort((a, b) => {
             if (a.averageRating === 'Sin valoraciones') return 1;
@@ -217,10 +213,6 @@ app.get('/ranking', authenticateToken, async (req, res) => {
     }
 });
 
-
-// --- RUTAS NUEVAS PARA GESTIONAR LA FIESTA ACTIVA ---
-
-// Ruta para OBTENER la fiesta activa del DJ logueado
 app.get('/api/active-party', authenticateToken, async (req, res) => {
     try {
         const dj = await DJ.findById(req.user.id);
@@ -233,7 +225,6 @@ app.get('/api/active-party', authenticateToken, async (req, res) => {
     }
 });
 
-// Ruta para FINALIZAR la fiesta activa del DJ logueado
 app.post('/api/end-party', authenticateToken, async (req, res) => {
     try {
         await DJ.updateOne({ _id: req.user.id }, { activePartyId: null });
@@ -243,8 +234,7 @@ app.post('/api/end-party', authenticateToken, async (req, res) => {
     }
 });
 
-
-// --- 6. LÓGICA DE SOCKET.IO (TIEMPO REAL) ---
+// --- 6. LÓGICA DE SOCKET.IO ---
 io.on('connection', (socket) => {
     console.log(`🔌 Un cliente se ha conectado: ${socket.id}`);
 
@@ -298,13 +288,16 @@ io.on('connection', (socket) => {
 
     socket.on('submit-rating', async (data) => {
         try {
-            const { djUsername, rating } = data;
-            const originalDjUsername = djUsername.substring(0, djUsername.lastIndexOf('-')) || djUsername;
-            await DJ.findOneAndUpdate(
-                { username: originalDjUsername },
-                { $push: { ratings: { value: rating } } }
-            );
-            console.log(`⭐ Puntuación de [${rating}] recibida para el DJ [${originalDjUsername}]`);
+            const { partyId, rating } = data;
+            const party = await Party.findOne({ partyId: partyId });
+            if (party) {
+                const djUsername = party.djUsername;
+                await DJ.findOneAndUpdate(
+                    { username: djUsername },
+                    { $push: { ratings: { value: rating } } }
+                );
+                console.log(`⭐ Puntuación de [${rating}] recibida para el DJ [${djUsername}]`);
+            }
         } catch (error) {
             console.error('Error al guardar la puntuación:', error);
         }
