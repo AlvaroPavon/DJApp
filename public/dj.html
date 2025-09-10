@@ -50,7 +50,6 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const Capacitor = window.Capacitor;
-            // Obtenemos el nuevo plugin Filesystem
             const { App, Share, Filesystem } = Capacitor.Plugins;
 
             const token = localStorage.getItem('dj-token');
@@ -91,7 +90,16 @@
                 }
             }
 
-            initialize();
+            initialize(); // Se ejecuta la primera vez que carga la página
+
+            // --- CÓDIGO AÑADIDO PARA GESTIONAR EL ESTADO DE LA APP ---
+            if (Capacitor.isNativePlatform()) {
+                // Se ejecuta CADA VEZ que la app vuelve a primer plano
+                App.addListener('resume', () => {
+                    console.log('App resumida, comprobando estado de la fiesta...');
+                    initialize(); // Volvemos a comprobar si hay una fiesta activa
+                });
+            }
 
             createPartyBtn.addEventListener('click', () => {
                 const customName = partyNameInput.value.trim();
@@ -128,6 +136,8 @@
                 
                 socket.emit('join-dj-room', currentPartyId);
                 
+                // ... (El resto del código de runDashboard no necesita cambios)
+
                 const createSongItem = (cancion) => {
                     const item = document.createElement('li');
                     item.className = 'cancion-item';
@@ -193,32 +203,28 @@
                     if (error) return console.error(error);
                     shareQrBtn.style.display = 'block';
                 });
-
-                // --- LÓGICA DE COMPARTIR/GUARDAR COMPLETAMENTE MODIFICADA ---
+                
                 shareQrBtn.onclick = async () => {
                     const dataUrl = canvas.toDataURL('image/png');
                     
                     if (Capacitor.isNativePlatform()) {
                         try {
-                            // 1. Guardar la imagen como archivo temporal
                             const result = await Filesystem.writeFile({
                                 path: `qr-${currentPartyId}.png`,
                                 data: dataUrl,
-                                directory: 'CACHE' // Directorio de caché de la app
+                                directory: 'CACHE'
                             });
 
-                            // 2. Compartir el archivo guardado
                             await Share.share({
                                 title: `Código QR para la fiesta ${currentPartyId}`,
                                 text: 'Escanea este código para pedir canciones.',
-                                url: result.uri, // Usamos la URI del archivo guardado
+                                url: result.uri,
                             });
                         } catch (error) {
                             console.error("Error al compartir el archivo", error);
                             alert("No se pudo compartir el QR.");
                         }
                     } else {
-                        // Lógica para web no cambia
                         const link = document.createElement('a');
                         link.href = dataUrl;
                         link.download = `qr-fiesta-${currentPartyId}.png`;
@@ -243,15 +249,6 @@
                         }
                     }
                 });
-
-                if (Capacitor.isNativePlatform()) {
-                    App.addListener('appStateChange', ({ isActive }) => {
-                        if (isActive && !socket.connected) {
-                            console.log('App activa, reconectando socket...');
-                            socket.connect();
-                        }
-                    });
-                }
             }
         });
     </script>
