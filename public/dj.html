@@ -33,7 +33,7 @@
                 <h3>QR de la Fiesta</h3>
                 <p>Muestra o imprime este QR para que tus invitados pidan canciones.</p>
                 <div id="qrcode-container"></div>
-                <button id="share-qr-btn" style="display: none;">Guardar QR</button>
+                <button id="share-qr-btn" style="display: none;">Compartir / Guardar QR</button>
             </div>
             <button id="btn-nueva-fiesta" style="margin-top: 20px;">🎉 Limpiar Lista</button>
             <button id="end-party-btn" style="background-color: var(--color-error); margin-top: 10px;">Finalizar y Crear Nueva Fiesta</button>
@@ -42,7 +42,16 @@
     
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script type="module">
+        // --- 1. IMPORTACIONES DE CAPACITOR ---
+        // Importamos el núcleo y los scripts de los plugins
+        import Capacitor from 'https://cdn.jsdelivr.net/npm/@capacitor/core@latest/dist/capacitor.js';
+        import 'https://cdn.jsdelivr.net/npm/@capacitor/app@latest/dist/plugin.js';
+        import 'https://cdn.jsdelivr.net/npm/@capacitor/share@latest/dist/plugin.js';
+
         document.addEventListener('DOMContentLoaded', () => {
+            // Obtenemos los plugins del objeto global de Capacitor
+            const { App, Share } = Capacitor.Plugins;
+
             const token = localStorage.getItem('dj-token');
             if (!token) {
                 window.location.href = '/login.html';
@@ -53,13 +62,10 @@
             const createPartyBtn = document.getElementById('create-party-btn');
             const partyNameInput = document.getElementById('party-name-input');
             
-            // --- LÓGICA DE INICIO MODIFICADA ---
-            // Esta función ahora le pregunta al servidor si hay una fiesta activa.
             async function initialize() {
                 const urlParams = new URLSearchParams(window.location.search);
-                let partyId = urlParams.get('dj'); // Primero revisamos si se accede por un enlace directo
+                let partyId = urlParams.get('dj');
 
-                // Si no hay ID en la URL, le preguntamos al servidor
                 if (!partyId) {
                     try {
                         const response = await fetch('/api/active-party', {
@@ -84,7 +90,7 @@
                 }
             }
 
-            initialize(); // Ejecutamos la función de inicio
+            initialize();
 
             createPartyBtn.addEventListener('click', () => {
                 const customName = partyNameInput.value.trim();
@@ -95,7 +101,7 @@
                 const cleanName = customName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
                 const randomString = Math.random().toString(36).substring(2, 8);
                 const uniquePartyId = `${cleanName}-${randomString}`;
-                window.location.href = `dj.html?dj=${uniquePartyId}`;
+                window.location.href = `/dj.html?dj=${uniquePartyId}`;
             });
 
             function runDashboard(currentPartyId) {
@@ -103,6 +109,7 @@
                 const listaCanciones = document.getElementById('lista-canciones');
                 const btnNuevaFiesta = document.getElementById('btn-nueva-fiesta');
                 const shareQrBtn = document.getElementById('share-qr-btn');
+                const qrcodeContainer = document.getElementById('qrcode-container');
                 
                 const serverUrl = "https://djapp.duckdns.org";
                 
@@ -177,26 +184,34 @@
                 });
                 
                 const guestUrl = `${serverUrl}/index.html?dj=${currentPartyId}`;
-                const qrcodeContainer = document.getElementById('qrcode-container');
                 qrcodeContainer.innerHTML = '';
-                QRCode.toCanvas(guestUrl, { width: 300, margin: 1 }, (error, canvas) => {
+                const canvas = document.createElement('canvas');
+                qrcodeContainer.appendChild(canvas);
+                
+                QRCode.toCanvas(canvas, guestUrl, { width: 300, margin: 1 }, (error) => {
                     if (error) return console.error(error);
-                    qrcodeContainer.appendChild(canvas);
                     shareQrBtn.style.display = 'block';
+                });
 
-                    shareQrBtn.onclick = () => {
-                        const dataUrl = canvas.toDataURL('image/png');
+                shareQrBtn.onclick = async () => {
+                    const dataUrl = canvas.toDataURL('image/png');
+
+                    if (Capacitor.isNativePlatform()) {
+                        await Share.share({
+                            title: `Código QR para la fiesta ${currentPartyId}`,
+                            text: 'Escanea este código para pedir canciones.',
+                            url: dataUrl,
+                        });
+                    } else {
                         const link = document.createElement('a');
                         link.href = dataUrl;
                         link.download = `qr-fiesta-${currentPartyId}.png`;
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
-                    };
-                });
+                    }
+                };
                 
-                // --- BOTÓN DE FINALIZAR FIESTA MODIFICADO ---
-                // Ahora llama a la API para finalizar la fiesta en el servidor.
                 const endPartyBtn = document.getElementById('end-party-btn');
                 endPartyBtn.addEventListener('click', async () => {
                     if (confirm('¿Estás seguro de que quieres finalizar esta fiesta?')) {
@@ -205,7 +220,6 @@
                                 method: 'POST',
                                 headers: { 'Authorization': `Bearer ${token}` }
                             });
-                            // Redirigimos solo después de que el servidor haya confirmado
                             window.location.href = '/dj.html';
                         } catch (error) {
                             console.error('Error al finalizar la fiesta:', error);
@@ -213,6 +227,15 @@
                         }
                     }
                 });
+
+                if (Capacitor.isNativePlatform()) {
+                    App.addListener('appStateChange', ({ isActive }) => {
+                        if (isActive && !socket.connected) {
+                            console.log('App activa, reconectando socket...');
+                            socket.connect();
+                        }
+                    });
+                }
             }
         });
     </script>
